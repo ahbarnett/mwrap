@@ -8,7 +8,7 @@ Converted to Python by Zydrunas Gimbutas (2026),
 with assistance from Claude Code / Claude Opus 4.6 (Anthropic).
 """
 
-from mwrap_ast import VT
+from mwrap_ast import VT, id_string
 
 
 def _output_arg_names(args):
@@ -37,9 +37,9 @@ def _dim_arg_strs(vars):
     return parts
 
 
-def print_matlab_call(fp, f, mexfunc):
+def print_matlab_call(fp, ctx, f, mexfunc):
     """Emit MATLAB stub for function call f."""
-    fp.write(f"mex_id_ = {f.id};\n")
+    fp.write(f"mex_id_ = '{id_string(ctx, f)}';\n")
 
     out_names = _output_arg_names(f.ret) + _output_arg_names(f.args)
     if out_names:

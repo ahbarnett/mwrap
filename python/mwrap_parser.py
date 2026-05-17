@@ -441,7 +441,7 @@ class Parser:
         self.type_errs += typecheck(self.ctx, func, self._line())
 
         if self.lexer.outfp:
-            print_matlab_call(self.lexer.outfp, func, self.mexfunc)
+            print_matlab_call(self.lexer.outfp, self.ctx, func, self.mexfunc)
 
         self._add_func(func)
 

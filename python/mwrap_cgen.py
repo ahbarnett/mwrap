@@ -895,36 +895,6 @@ def _print_mex_stubs(fp, ctx, funcs):
         _print_mex_stub(fp, ctx, f)
 
 
-def _print_mex_stub_table(fp, funcs):
-    # Build id → stub_id map
-    id_to_stub = {}
-    maxid = 0
-    for fc in funcs:
-        id_to_stub[fc.id] = fc.id
-        if fc.id > maxid:
-            maxid = fc.id
-        for fsame in fc.same:
-            id_to_stub[fsame.id] = fc.id
-            if fsame.id > maxid:
-                maxid = fsame.id
-
-    if maxid <= 0:
-        return
-
-    fp.write("typedef void (*mwStubFunc_t)(int nlhs, mxArray* plhs[],\n"
-           "                             int nrhs, const mxArray* prhs[]);\n\n"
-           "static mwStubFunc_t mwStubs_[] = {\n"
-           "    NULL")
-    for i in range(1, maxid + 1):
-        fp.write(",\n")
-        if i in id_to_stub:
-            fp.write(f"    mexStub{id_to_stub[i]}")
-        else:
-            fp.write("    NULL")
-    fp.write("\n};\n\n")
-    fp.write(f"static int mwNumStubs_ = {maxid};\n\n")
-
-
 def _make_profile_output(fp, funcs, printfunc):
     fp.write(f"        if (!mexprofrecord_)\n"
            f"            {printfunc}\"Profiler inactive\\n\");\n")
@@ -985,23 +955,14 @@ MEX_BASE = (
     "void mexFunction(int nlhs, mxArray* plhs[],\n"
     "                 int nrhs, const mxArray* prhs[])\n"
     "{\n"
+    "    char id[1024];\n"
     "    if (nrhs == 0) {\n"
     "        mexPrintf(\"Mex function installed\\n\");\n"
-    "        return;\n"
-    "    }\n\n"
-    "    /* Fast path: integer stub ID */\n"
-    "    if (!mxIsChar(prhs[0])) {\n"
-    "        int stub_id = (int) mxGetScalar(prhs[0]);\n"
-    "        if (stub_id > 0 && stub_id <= mwNumStubs_ && mwStubs_[stub_id])\n"
-    "            mwStubs_[stub_id](nlhs, plhs, nrhs-1, prhs+1);\n"
-    "        else\n"
-    "            mexErrMsgTxt(\"Unknown function ID\");\n"
     "        return;\n"
     "    }\n\n"
 )
 
 MEX_BASE_IF = (
-    "    char id[1024];\n"
     "    if (mxGetString(prhs[0], id, sizeof(id)) != 0)\n"
     "        mexErrMsgTxt(\"Identifier should be a string\");\n"
 )
@@ -1034,7 +995,6 @@ def print_mex_file(fp, ctx, funcs):
         mex_fortran_decls(fp, funcs)
 
     _print_mex_stubs(fp, ctx, funcs)
-    _print_mex_stub_table(fp, funcs)
     fp.write(MEX_BASE)
     fp.write("\n")
     if ctx.mw_use_gpu:
